@@ -1,0 +1,133 @@
+# Introduction to Exploratory Data Analysis (EDA)
+
+## What is Exploratory Data Analysis (EDA)?
+
+Exploratory Data Analysis (EDA) is the process of analyzing and summarizing datasets to uncover patterns, relationships, and anomalies before applying machine learning models or statistical tests. It involves both graphical and quantitative techniques to understand the structure and characteristics of the data.
+
+## Importance of EDA
+
+- **Identifies Data Quality Issues:** Helps detect missing values, duplicates, and inconsistencies.
+- **Uncovers Patterns and Trends:** Reveals underlying trends and relationships between variables.
+- **Guides Feature Engineering:** Helps in selecting, creating, or transforming features for modeling.
+- **Determines Assumptions for Modeling:** Helps check if assumptions for statistical tests and machine learning models hold.
+
+## Key Steps in EDA
+
+### 1. Understanding the Dataset
+
+- **Load the Data:** Use `pandas` to read datasets (CSV, Excel, SQL, etc.).
+    
+    ```python
+    import pandas as pd
+    df = pd.read_csv('data.csv')
+    
+    ```
+    
+- **Check Basic Information:**
+    
+    ```python
+    df.info()  # Summary of dataset structure
+    df.head()  # Preview first few rows
+    df.tail()  # Preview last few rows
+    
+    ```
+    
+
+### 2. Handling Missing Data
+
+- **Detect Missing Values:**
+    
+    ```python
+    df.isnull().sum()
+    
+    ```
+    
+- **Impute or Remove Missing Values:**
+    
+    ```python
+    df.fillna(df.mean(), inplace=True)  # Replace missing values with mean
+    df.dropna(inplace=True)  # Remove rows with missing values
+    
+    ```
+    
+
+### 3. Summary Statistics
+
+- **Get General Statistics:**
+    
+    ```python
+    df.describe()
+    
+    ```
+    
+- **Check for Outliers:**
+    
+    ```python
+    df.boxplot()
+    
+    ```
+    
+
+### 4. Data Visualization
+
+- **Univariate Analysis:** (Analyzing one variable)
+    - Histograms (`df['column'].hist()`)
+    - Boxplots (`df.boxplot(column='column')`)
+    - KDE plots (`sns.kdeplot(df['column'])`)
+- **Bivariate Analysis:** (Relationships between two variables)
+    - Scatter plots (`sns.scatterplot(x='col1', y='col2', data=df)`)
+    - Correlation heatmaps (`sns.heatmap(df.corr(), annot=True)`)
+    - Pair plots (`sns.pairplot(df)`)
+
+### 5. Checking for Outliers
+
+- **Using Boxplots:**
+    
+    ```python
+    import seaborn as sns
+    sns.boxplot(x=df['column'])
+    
+    ```
+    
+- **Using Z-score or IQR (Interquartile Range) method:**
+    
+    ```python
+    from scipy import stats
+    df = df[(np.abs(stats.zscore(df['column'])) < 3)]
+    
+    ```
+    
+
+### 6. Feature Engineering & Transformation
+
+- **Scaling Data:**
+    
+    ```python
+    from sklearn.preprocessing import StandardScaler
+    scaler = StandardScaler()
+    df[['col1', 'col2']] = scaler.fit_transform(df[['col1', 'col2']])
+    
+    ```
+    
+- **Encoding Categorical Variables:**
+    
+    ```python
+    df = pd.get_dummies(df, columns=['categorical_column'], drop_first=True)
+    
+    ```
+    
+
+### 7. Identifying Relationships in Data
+
+- **Correlation Analysis:**
+    
+    ```python
+    df.corr()
+    
+    ```
+    
+- **Feature Selection:** Identify which features are most relevant using correlation heatmaps, variance thresholds, or statistical tests.
+
+## Conclusion
+
+EDA is a crucial step before applying machine learning models. It helps clean the data, identify trends, and ensure the right features are selected for analysis. By applying EDA techniques, you can gain deeper insights into your dataset and make informed decisions on the next steps in the data science workflow.

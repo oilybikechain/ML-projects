@@ -1,0 +1,102 @@
+**Project Overview:**
+
+- **Goal:** To build a machine learning model that can classify iris flowers into one of three species (Setosa, Versicolor, Virginica) based on sepal and petal measurements.
+- **Dataset:** The Iris dataset, available through Scikit-learn (`sklearn.datasets.load_iris()`).
+- **Key Concepts Learned:**
+    - Classification algorithms
+    - Overfitting and underfitting
+    - Hyperparameter tuning
+    - Feature scaling
+    - Model persistence (saving and loading models)
+
+**II. Machine Learning Models:**
+
+- **Types Used:**
+    - Decision Tree Classifier
+    - Random Forest Classifier
+    - Support Vector Machine (SVM)
+- **Model Details:**
+
+| Model | How it Works | Strengths | Weaknesses |
+| --- | --- | --- | --- |
+| Decision Tree | Splits data based on feature values to create a tree-like structure. | Easy to understand, minimal data preparation, handles numerical and categorical data, can capture non-linear relationships. | Prone to overfitting, sensitive to small data changes, can be unstable. |
+| Random Forest | Combines multiple Decision Trees trained on random data and feature subsets. | Higher accuracy, robust to overfitting, can handle high-dimensional data, provides feature importance. | Less interpretable, computationally expensive, requires more hyperparameter tuning. |
+| Support Vector Machine | Finds the optimal hyperplane to separate classes, often using kernel functions. | Effective in high-dimensional spaces, memory efficient, versatile through different kernel choices. | Sensitive to hyperparameter tuning, not suitable for large datasets, difficult to interpret, requires feature scaling. |
+
+**III. Overfitting and Underfitting:**
+
+- **Overfitting:**
+    - The model learns the training data *too* well, including the noise and specific details.
+    - Excellent performance on the training data, but poor performance on new, unseen data.
+    - High variance (sensitive to small changes in the data).
+    - **Solutions:**
+        - Get more data.
+        - Simplify the model.
+        - Use regularization techniques.
+        - Early stopping.
+        - Cross-validation.
+- **Underfitting:**
+    - The model is too simple to capture the underlying patterns in the data.
+    - Poor performance on both the training and testing data.
+    - High bias (making strong, incorrect assumptions).
+    - **Solutions:**
+        - Use a more complex model.
+        - Add more features.
+        - Reduce constraints on the model.
+        - Gather more data.
+
+**IV. Hyperparameters:**
+
+- **Definition:** Settings or configuration options for a machine learning model that are set *before* training.
+- **Purpose:** To control *how* the model learns and to optimize its performance.
+- **Examples:** `max_depth` (for a Decision Tree), `n_estimators` (for a Random Forest).
+- **Tuning:** Finding the best hyperparameter values for a model, often using techniques like GridSearchCV.
+
+**V. Feature Scaling:**
+
+- **Definition:** A process of transforming the features (input variables) in a dataset to have a similar scale.
+- **Reasons for Scaling:**
+    - Distance-based algorithms (e.g., SVM, KNN) are sensitive to feature scale.
+    - Regularization techniques can be affected by feature scale.
+    - Can lead to faster convergence of gradient descent-based algorithms.
+- **Types of Scaling Used:**
+    - `StandardScaler`: Transforms features to have a mean of 0 and a standard deviation of 1.
+- **Proper Procedures for Calling a Scaled Model:**
+    1. The scalar is `.fit()` to `X_train`
+    2. The `StandardScaler` will be dumped to the scalar
+    3. transform validation/test data via the scalar
+    4. Retrain the model again using the new data and the new scaling parameter
+
+**VI. Model Persistence (Saving and Loading Models):**
+
+- **Library:** `joblib`
+- **Why Use It:** To save trained models to disk so they can be reused later without retraining.
+- **Steps:**
+    1. **Save:** `joblib.dump(model, filename)`
+    2. **Load:** `model = joblib.load(filename)`
+    - If the code is run again the `filename` can be loaded to reuse the dumped dataset instead of constantly training
+
+**VII. Code Execution and Model Training (Chronological Order):**
+
+Here's how the code flows and how the model is trained, step-by-step:
+
+1. **Import Libraries:** Imports all necessary Python libraries.
+2. **Define Model Path:** Declares where the trained model will be saved (`MODEL_PATH`).
+3. **Load New Data** Loads a new data set.
+4. **First Run - Is this new training, or loading a model?** Load the initial trained model, if that isn't present do the following:
+- Load from `StandardScaler`, and train a basic set. The `StandardScaler` calculates the scaling parameters (mean and standard deviation for each feature) from the new data and prepares it for scaling of the new data to the old data so the two can be merged.
+- Uses the scaling parameter to scale the current data set, allowing it to merge
+5. At this point the code is ready to train a model from data. **It's important to note** that is it here where you want to use a tool such as `GridSearchCV` to properly train and identify what configurations are necessary.
+1. **After Training**
+    - Once the model has finished a first round of calculations, `dump` it so that it can be pulled for future calculations.
+
+This completes the training of the model from data and dumps to a file for future use.
+
+1. **Second Run - Training On Top of the Model** This will repeat all of Step 3
+2. Because the files will exist, the data from these models will be pulled, and after processing a step 6 will automatically train the new data into it, and the loop will begin again
+
+Here, the scaling parameters were used to properly process the new dataset, and merge it on top of the already existing model. The `joblib` command is the final action of the command which means that all of the data is saved so the the bot may improve and train. This step is what allows the model to continuously train without any issue
+
+**VIII. Evaluation:**
+
+- Calculate, print and visualize evaluation methods to show effectiveness
