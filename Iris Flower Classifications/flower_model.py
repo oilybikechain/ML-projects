@@ -24,8 +24,9 @@ X = iris.data
 y = iris.target
 
 # Split new data into training, validation, and testing sets
-X_train_new, X_test_new, y_train_new, y_test_new = train_test_split(X, y, test_size=0.2, random_state=43)
-X_train_new, X_val_new, y_train_new, y_val_new = train_test_split(X_train_new, y_train_new, test_size=0.2, random_state=43)
+#Actually no need for validation set as 
+X_train_new, X_test_new, y_train_new, y_test_new = train_test_split(X, y, test_size=0.2, random_state=43, stratify = y)
+#X_train_new, X_val_new, y_train_new, y_val_new = train_test_split(X_train_new, y_train_new, test_size=0.2, random_state=43)
 
 # 3. Check for existence of model and if doesn't exist make a default set to train, if it exists, pull in the best one
 if os.path.exists(MODEL_PATH):
@@ -39,7 +40,7 @@ else:
     # Feature Scaling
     scaler = StandardScaler()
     X_train_new = scaler.fit_transform(X_train_new)
-    X_val_new = scaler.transform(X_val_new)
+    # X_val_new = scaler.transform(X_val_new)
     X_test_new = scaler.transform(X_test_new)
 
     # Choose a Machine Learning Model
@@ -77,10 +78,10 @@ else:
     print("Finished training new scaler")
 joblib.dump(scaler, SCALER_PATH)
 
-#5. Dump all the values into a numpy array for training, validation, and testing
+# #5. Dump all the values into a numpy array for training, validation, and testing
 
 X_train_new = scaler.transform(X_train_new)
-X_val_new = scaler.transform(X_val_new)
+# X_val_new = scaler.transform(X_val_new)
 X_test_new = scaler.transform(X_test_new)
 
 # 6. Retrain the Model using more data
