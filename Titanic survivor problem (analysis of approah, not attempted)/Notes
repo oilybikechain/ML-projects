@@ -1,0 +1,582 @@
+did not end up attempting this but instead did a review on someone elses attempt,
+# Titanic project
+
+# EDA
+
+**I. EDA Philosophy:**
+
+- **Goal:** Gain an understanding of the data before diving into feature engineering or model building.
+- **Iterative Process:** EDA is an iterative process of exploring the data, forming hypotheses, and then investigating those hypotheses further.
+- **Focus on Asking Questions:** EDA is about asking questions of the data, not just blindly applying techniques.
+- **Balance Exploration and Efficiency:** Acknowledge that EDA can be very time-consuming, so strike a balance between thorough exploration and moving forward to the model building phase.
+- **Comments & Planning:** Use comments and a project outline to guide the EDA process and stay organized.
+
+**II. EDA Steps:**
+
+Here's a breakdown of the EDA steps the speaker performed, with corresponding code examples and explanations:
+
+1. **Understand the Shape of the Data:**
+    - **Goal:** Get a quick overview of data types and missing values.
+    - **Code:**
+
+```python
+training.info()
+
+```
+
+- **Explanation:**
+    - `training.info()` provides a summary of the DataFrame, including the column names, data types, and number of non-null values in each column.
+    - This helps identify which columns have missing data and what types of data they contain.
+1. **Descriptive Statistics for Numeric Data:**
+    - **Goal:** Understand central tendencies (mean, median) and the distribution of numeric variables.
+    - **Code:**
+
+```python
+training.describe()
+
+```
+
+- **Explanation:**
+    - `training.describe()` calculates summary statistics for the numeric columns in the DataFrame, including count, mean, standard deviation, minimum, maximum, and percentiles.
+    - This provides insights into the range and distribution of the numeric data.
+1. **Histograms for Numeric Variables:**
+    - **Goal:** Visualize the distribution of numeric variables.
+    - **Code:**
+
+```python
+df_num = training[['Age','SibSp','Parch','Fare']]  # Isolate numeric features
+for i in df_num.columns:
+    plt.hist(df_num[i])
+    plt.title(i)
+    plt.show()
+
+```
+
+- **Explanation:**
+    - Isolates only the numerical factors for plotting in a visual representation.
+    - This helps identify skewness, outliers, and potential data transformations (e.g., normalization).
+1. **Correlation Analysis:**
+    - **Goal:** Identify relationships between numeric variables.
+    - **Code:**
+
+```python
+print(df_num.corr())
+sns.heatmap(df_num.corr())
+
+```
+
+- **Explanation:**
+    - `df_num.corr()` calculates the correlation matrix, which shows the pairwise correlations between the numeric variables.
+    - `sns.heatmap(df_num.corr())` visualizes the correlation matrix as a heatmap.
+    - This helps identify potential multicollinearity (high correlation between predictor variables).
+1. **Pivot Tables (Survival Rate by Numeric Variables):**
+    - **Goal:** Compare survival rates across different numeric variables.
+    - **Code:**
+
+```python
+pd.pivot_table(training, index = 'Survived', values = ['Age','SibSp','Parch','Fare'])
+
+```
+
+- **Explanation:**
+    - `pd.pivot_table()` creates a pivot table that shows the mean values of the specified numeric variables for passengers who survived and those who did not.
+    - This helps identify whether certain ranges of values for these variables are associated with higher or lower survival rates.
+1. **Value Counts for Categorical Variables:**
+    - **Goal:** Understand the distribution of categorical variables.
+    - **Code:**
+
+```python
+df_cat = training[['Survived','Pclass','Sex','Ticket','Cabin','Embarked']] # Isolate categorical factors
+
+for i in df_cat.columns:
+    sns.barplot(df_cat[i].value_counts().index,df_cat[i].value_counts()).set_title(i)
+    plt.show()
+
+```
+
+- **Explanation:**
+    - This part of the code visually summarizes the different characteristics of each data set.
+    - This provides a clear picture of the relative frequency of each category.
+1. **Pivot Tables (Survival Rate by Categorical Variables):**
+    - **Goal:** Compare survival rates across different categorical variables.
+    - **Code:**
+
+```python
+print(pd.pivot_table(training, index = 'Survived', columns = 'Pclass', values = 'Ticket' ,aggfunc ='count'))
+print(pd.pivot_table(training, index = 'Survived', columns = 'Sex', values = 'Ticket' ,aggfunc ='count'))
+print(pd.pivot_table(training, index = 'Survived', columns = 'Embarked', values = 'Ticket' ,aggfunc ='count'))
+
+```
+
+- **Explanation:**
+    - This set of commands creates pivot tables to demonstrate how different relationships affected each variable.
+    - This helps identify whether certain categories are associated with higher or lower survival rates.
+
+# Feature Engineering
+
+**I. Goal of Feature Engineering:**
+
+- To create new features from existing ones that can potentially improve the model's predictive power.
+- To simplify complex features (like `Cabin` and `Ticket`) into more manageable and informative representations.
+- To capture potentially important relationships or patterns in the data that might not be evident from the raw features.
+
+**II. Feature Engineering Steps:**
+
+1. **Cabin Feature:**
+    - **Goal:** Simplify the `Cabin` variable, which contains a letter (representing the deck) and a number (representing the cabin number).
+    - **Rationale:** The speaker notes that there are many unique cabin values, which could lead to too many columns when one-hot encoding.
+    - **Code:**
+
+```python
+training['cabin_multiple'] = training.Cabin.apply(lambda x: 0 if pd.isna(x) else len(x.split(' ')))
+
+```
+
+```
+*   **Explanation:**
+    *   This creates a new feature, `cabin_multiple`, which indicates whether a passenger had multiple cabins (1) or not (0). This is done by splitting the cabin string by spaces and counting the resulting elements.
+    *   This simplifies the cabin information into a binary variable.
+
+```
+
+```python
+training['cabin_adv'] = training.Cabin.apply(lambda x: str(x)[0])
+
+```
+
+```
+*   **Explanation:**
+    *   This creates a new feature, `cabin_adv`, which extracts the first letter (deck) from the cabin string.
+    *   `str(x)[0]` takes the first character of the string (the cabin letter).
+
+```
+
+1. **Ticket Feature:**
+    - **Goal:** Determine if different ticket types impact survival rates.
+    - **Rationale:** Ticket numbers can contain both numbers and letters, and the speaker hypothesizes that the ticket type (numeric vs. non-numeric) might be relevant.
+    - **Code:**
+
+```python
+training['numeric_ticket'] = training.Ticket.apply(lambda x: 1 if x.isnumeric() else 0)
+training['ticket_letters'] = training.Ticket.apply(lambda x: ''.join(x.split(' ')[:-1]).replace('.','').replace('/','').lower() if len(x.split(' ')[:-1]) >0 else 0)
+
+```
+
+```
+*   **Explanation:**
+    *   `training['numeric_ticket']`: Creates a binary feature indicating whether the ticket is numeric (1) or not (0). `x.isnumeric()` checks if the ticket string is numeric.
+    *   `training['ticket_letters']`: Extracts letters for all strings that are not only numeric
+
+```
+
+1. **Name Feature (Title Extraction):**
+    - **Goal:** Determine if a person's title (e.g., "Mr.", "Mrs.", "Dr.") relates to survival rates.
+    - **Rationale:** Certain titles might be associated with higher social status or a higher priority for rescue.
+    - **Code:**
+
+```python
+training['name_title'] = training.Name.apply(lambda x: x.split(',')[1].split('.')[0].strip())
+
+```
+
+```
+*   **Explanation:**
+    *   This line extracts the title from the `Name` column.
+    *   `x.split(',')` splits the name string into two parts at the comma (",").
+    *   `[1]` selects the second part (the part containing the title).
+    *   `split('.')` splits the second part at the period (".")
+    *   `[0]` selects the first part (the title itself).
+    *   `strip()` removes any leading or trailing whitespace.
+
+```
+
+**III. Key Considerations:**
+
+- **Experimentation:** Feature engineering is an experimental process. Not all features will be useful, but it's worth trying different things to see what works.
+- **Simplify Complex Features:** The speaker simplifies complex features like `Cabin` and `Ticket` to reduce the number of columns and make the data more manageable.
+- **Potential for Further Exploration:** The speaker acknowledges that there's more feature engineering that could be done (e.g., grouping the extracted titles, analyzing family names), but he chose to move on to model building to keep the analysis concise.
+- **Regular Expressions:** Regular expressions (regex) can be helpful for extracting specific patterns from strings, but they can also be complex to use.
+
+# Data preprocessing
+
+**I. Goals of Data Preprocessing:**
+
+- Prepare the data so that it can be used as input to a machine learning model.
+- Handle missing values.
+- Transform categorical features into numerical features.
+- Normalize or scale numerical features if necessary.
+- Ensure that the training and test data are processed consistently.
+
+**II. Data Preprocessing Steps:**
+
+1. **Handling Missing Values:**
+    - **Code:**
+
+```python
+# Impute nulls for continuous data
+all_data.Age = all_data.Age.fillna(training.Age.median())
+all_data.Fare = all_data.Fare.fillna(training.Fare.median())
+
+```
+
+```
+*   **Explanation:**
+    *   Fills missing values in the `Age` column with the median age from the training data. Using the median is preferred over the mean when the data may be skewed.
+    *   Fills missing values in the `Fare` column with the median fare from the training data.
+
+```
+
+```python
+# Drop null 'Embarked' rows. Only 2 instances of this in training and 0 in test
+all_data.dropna(subset=['Embarked'], inplace=True)
+
+```
+
+```
+*   **Explanation:**
+    *   Removes rows where the `Embarked` column has a missing value. Since there are only a few missing values in this column, removing the rows is a simple solution.
+
+```
+
+1. **Transformation (Log Normalization):**
+    - **Code:**
+
+```python
+# Log norm of fare (used)
+all_data['norm_fare'] = np.log(all_data.Fare+1)
+all_data['norm_fare'].hist()
+
+```
+
+```
+*   **Explanation:**
+    *   Applies a logarithmic transformation to the `Fare` column to reduce skewness and make the distribution closer to normal.
+    *   Adding 1 before taking the logarithm prevents errors when `Fare` is 0.
+
+```
+
+1. **Categorical Encoding (One-Hot Encoding):**
+    - **Goal:** Convert categorical features into numerical features that can be used by machine learning models.
+    - **Code:**
+
+```python
+# Converted Pclass to category for pd.get_dummies()
+all_data.Pclass = all_data.Pclass.astype(str)
+
+# Created dummy variables from categories (also can use OneHotEncoder)
+all_dummies = pd.get_dummies(all_data[['Pclass','Sex','Age','SibSp','Parch','norm_fare','Embarked','cabin_adv','cabin_multiple','numeric_ticket','name_title','train_test']])
+
+```
+
+```
+*   **Explanation:**
+    *   Before one-hot encoding, the `Pclass` column is converted to string type, likely because it's being treated as a categorical variable rather than a numerical one.
+    *   `pd.get_dummies()` creates dummy variables (one-hot encoding) for the specified categorical features.
+    *   For each categorical variable, it creates a new column for each unique value, and assigns a 1 or 0 to indicate whether the observation belongs to that category.
+
+```
+
+1. **Scaling Data:**
+    - **Code:**
+
+```python
+# Scale data
+from sklearn.preprocessing import StandardScaler
+scale = StandardScaler()
+all_dummies_scaled = all_dummies.copy()
+all_dummies_scaled[['Age','SibSp','Parch','norm_fare']] = scale.fit_transform(all_dummies_scaled[['Age','SibSp','Parch','norm_fare']])
+all_dummies_scaled
+
+```
+
+```
+*   **Explanation:**
+    *   `StandardScaler()` is used to scale the numerical features to have zero mean and unit variance. This can be helpful for some machine learning models, especially those that are sensitive to feature scale.
+    *   Only specific columns are scaled, while keeping the one-hot encoded variables from being scaled (this is an odd choice, it is unusual to scale some columns but not others.)
+
+```
+
+1. **Splitting Data Back into Training and Test Sets:**
+    - **Code:**
+
+```python
+# Split to train test again
+X_train = all_dummies[all_dummies.train_test == 1].drop(['train_test'], axis =1)
+X_test = all_dummies[all_dummies.train_test == 0].drop(['train_test'], axis =1)
+
+y_train = all_data[all_data.train_test==1].Survived
+y_train.shape
+
+```
+
+```
+*   **Explanation:**
+    *   The combined `all_dummies` DataFrame is split back into training (`X_train`, `y_train`) and test (`X_test`) sets based on the `train_test` column that was added at the beginning.
+    *   `train_test` is dropped, which is no longer useful after the data is separated.
+
+```
+
+```python
+X_train_scaled = all_dummies_scaled[all_dummies_scaled.train_test == 1].drop(['train_test'], axis =1)
+X_test_scaled = all_dummies_scaled[all_dummies_scaled.train_test == 0].drop(['train_test'], axis =1)
+
+y_train = all_data[all_data.train_test==1].Survived
+
+```
+
+- `X_train_scaled`and `X_test_scaled` is now created so to contain all the data that is properly pre-processed
+**III. Key Takeaways**
+- **Joint Preprocessing:** The speaker combines training and testing data for preprocessing to ensure consistent columns. However, they acknowledge this is *not* best practice for real-world data science because the goal is to ensure that all transforms are calculated from the training data and not "pollute" the system by showing future cases to the previous ones.
+- **Categorical Encoding:** One-hot encoding is used to transform categorical features into numerical features.
+- **Scaling:** Some columns for `StandardScaler()` is used, but it's very important to know that the data needs to be fitted to a test.
+
+With the data prepared, the project can perform modelling!
+
+# Model building (Baseline validation performance)
+
+**I. Goal of Model Building (Baseline):**
+
+- To establish a baseline performance for different machine learning models *before* any hyperparameter tuning.
+- To get a sense of which models are most promising for this problem.
+- To quantify the impact of feature engineering and data preprocessing on model performance.
+
+**II. Model Building Steps:**
+
+1. **Select a Range of Models:**
+    - The speaker selects a variety of commonly used classification models:
+        - Naive Bayes
+        - Logistic Regression
+        - Decision Tree
+        - K-Nearest Neighbors
+        - Random Forest
+        - Support Vector Classifier
+        - Xtreme Gradient Boosting (XGBoost)
+2. **Use Default Hyperparameters:**
+    - For this baseline performance evaluation, the speaker uses the default hyperparameters for each model. This means they are not tuning or optimizing any of the model parameters.
+3. **Cross-Validation:**
+    - The speaker uses 5-fold cross-validation to evaluate the performance of each model. This provides a more robust estimate of performance than a single train/test split.
+4. **Code:** Here are some examples of the code used to train and evaluate the models:
+
+```python
+from sklearn.model_selection import cross_val_score
+from sklearn.naive_bayes import GaussianNB
+from sklearn.linear_model import LogisticRegression
+from sklearn import tree
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.svm import SVC
+
+# I usually use Naive Bayes as a baseline for my classification tasks
+gnb = GaussianNB()
+cv = cross_val_score(gnb,X_train_scaled,y_train,cv=5)
+print(cv)
+print(cv.mean())
+
+```
+
+- **Explanation:**
+    - `GaussianNB()` creates an instance of the Gaussian Naive Bayes classifier.
+    - `cross_val_score()` performs cross-validation on the model. It takes the model (`gnb`), the training data (`X_train_scaled`, `y_train`), and the number of folds (`cv=5`) as input.
+    - The code loops through the different training data and scores the set, to provide an average as the "score" for each run.
+    - `print(cv.mean())` prints the mean cross-validation score, which represents the model's average performance across the 5 folds.
+
+Similar code is repeated for each model in the list, except with its class being called.
+
+1. **Voting Classifier:**
+    - The speaker also creates a voting classifier, which combines the predictions of multiple models to make a final prediction.
+    - The speaker trains a "soft" voting classifier, which averages the probabilities predicted by each model. This is an approach for Ensemble Modeling and more complex data problems, if you know how different data sets interact it's a good method to apply
+
+```python
+from sklearn.ensemble import VotingClassifier
+voting_clf = VotingClassifier(estimators = [('lr',lr),('knn',knn),('rf',rf),('gnb',gnb),('svc',svc),('xgb',xgb)], voting = 'soft')
+
+cv = cross_val_score(voting_clf,X_train_scaled,y_train,cv=5)
+print(cv)
+print(cv.mean())
+
+```
+
+- **Explanation:**
+    - This creates a soft voting classifier and evaluates its performance using cross-validation.
+1. **Record Baseline Performance:**
+    - The speaker records the mean cross-validation score for each model in a table (shown in the notebook). This table provides a baseline for comparison after hyperparameter tuning.
+
+**III. Key Takeaways:**
+
+- **Baseline Performance is Crucial:** Establishing a baseline allows you to quantify the impact of subsequent steps, such as hyperparameter tuning and feature engineering.
+- **Cross-Validation Provides a Robust Estimate:** Cross-validation is essential for getting a reliable estimate of model performance.
+- **Voting Classifiers Can Improve Generalization:** Voting classifiers can combine the strengths of multiple models to improve overall performance.
+- **No Hyperparameter Tuning Yet:** This step focuses on evaluating models with *default* settings, providing a starting point for further optimization.
+
+# Model Tuning
+
+**I. Goal of Model Tuning:**
+
+- To improve the performance of the individual machine learning models by finding the best combination of hyperparameters.
+- To identify the hyperparameters that maximize the model's ability to generalize to unseen data (i.e., to prevent overfitting).
+- To compare the tuned performance of each model to its baseline performance, quantifying the impact of hyperparameter tuning.
+
+**II. Model Tuning Techniques:**
+
+1. **Techniques Used:**
+    - **Grid Search:** For some models (e.g., Logistic Regression, K-Nearest Neighbors, Support Vector Classifier), the speaker used Grid Search to systematically try all possible combinations of hyperparameters within a specified range.
+    - **Randomized Search:** For more complex models with many hyperparameters (e.g., Random Forest, XGBoost), the speaker used Randomized Search to sample a random subset of hyperparameter combinations. This is more efficient than Grid Search when the hyperparameter space is very large.
+    - **Funnel Approach:** For Random Forest and XGBoost, the speaker used a "funnel approach" to hyperparameter tuning:
+        - **Randomized Search (Broad):** First, perform a broad Randomized Search to identify promising regions of the hyperparameter space.
+        - **Grid Search (Granular):** Then, perform a more granular Grid Search within those promising regions to fine-tune the hyperparameters.
+2. **Code:** Here are code examples illustrating how Grid Search and Randomized Search were used:
+
+```python
+from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import RandomizedSearchCV
+
+# Simple performance reporting function
+def clf_performance(classifier, model_name):
+    print(model_name)
+    print('Best Score: ' + str(classifier.best_score_))
+    print('Best Parameters: ' + str(classifier.best_params_))
+
+lr = LogisticRegression()
+param_grid = {'max_iter' : [2000],
+              'penalty' : ['l1', 'l2'],
+              'C' : np.logspace(-4, 4, 20),
+              'solver' : ['liblinear']}
+
+clf_lr = GridSearchCV(lr, param_grid = param_grid, cv = 5, verbose = True, n_jobs = -1)
+best_clf_lr = clf_lr.fit(X_train_scaled,y_train)
+clf_performance(best_clf_lr,'Logistic Regression')
+
+```
+
+- **Explanation:**
+    - This code snippet demonstrates how Grid Search is used to tune the hyperparameters of a Logistic Regression model.
+    - A `param_grid` dictionary is defined, which specifies the hyperparameters to tune and the range of values to try for each hyperparameter.
+    - `GridSearchCV()` is then used to train a lot of models and find which one performs best.
+
+```python
+"""
+rf = RandomForestClassifier(random_state = 1)
+param_grid =  {'n_estimators': [100,500,1000],
+                                  'bootstrap': [True,False],
+                                  'max_depth': [3,5,10,20,50,75,100,None],
+                                  'max_features': ['auto','sqrt'],
+                                  'min_samples_leaf': [1,2,4,10],
+                                  'min_samples_split': [2,5,10]}
+
+clf_rf_rnd = RandomizedSearchCV(rf, param_distributions = param_grid, n_iter = 100, cv = 5, verbose = True, n_jobs = -1)
+best_clf_rf_rnd = clf_rf_rnd.fit(X_train_scaled,y_train)
+clf_performance(best_clf_rf_rnd,'Random Forest')"""
+
+rf = RandomForestClassifier(random_state = 1)
+param_grid =  {'n_estimators': [400,450,500,550],
+               'criterion':['gini','entropy'],
+                                  'bootstrap': [True],
+                                  'max_depth': [15, 20, 25],
+                                  'max_features': ['auto','sqrt', 10],
+                                  'min_samples_leaf': [2,3],
+                                  'min_samples_split': [2,3]}
+
+clf_rf = GridSearchCV(rf, param_grid = param_grid, cv = 5, verbose = True, n_jobs = -1)
+best_clf_rf = clf_rf.fit(X_train_scaled,y_train)
+clf_performance(best_clf_rf,'Random Forest')
+
+```
+
+- **Explanation:** The first code snippet demonstrates that RandomizedSearchCV is used before it uses GridSearchCV. From this, it removes the first section as to not run it, but it still shows that a form of training was performed before tuning the model.
+1. **Performance Reporting Function:**
+    - The speaker defines a function called `clf_performance` to report the best score and best parameters found by Grid Search or Randomized Search.
+
+```python
+#simple performance reporting function
+def clf_performance(classifier, model_name):
+    print(model_name)
+    print('Best Score: ' + str(classifier.best_score_))
+    print('Best Parameters: ' + str(classifier.best_params_))
+
+```
+
+1. **Feature Importances**
+    - The speaker calls upon `.fit()` to find the feature importances
+
+```python
+best_rf = best_clf_rf.best_estimator_.fit(X_train_scaled,y_train)
+feat_importances = pd.Series(best_rf.feature_importances_, index=X_train_scaled.columns)
+feat_importances.nlargest(20).plot(kind='barh')
+
+```
+
+**III. Key Takeaways:**
+
+- **Hyperparameter Tuning is Essential:** Model tuning can significantly improve the performance of machine learning models.
+- **Grid Search vs. Randomized Search:** Grid Search is suitable for smaller hyperparameter spaces, while Randomized Search is more efficient for larger spaces.
+- **Funnel Approach for Complex Models:** The funnel approach of using Randomized Search followed by Grid Search can be a practical way to tune complex models with many hyperparameters.
+- **Test to Validate Your Model:** Its very important to test your model to validate the effectiveness
+
+# Model Additional Ensemble Approaches
+
+**I. Goal of Ensemble Modeling:**
+
+- To improve the overall predictive performance by combining the strengths of multiple individual models.
+- To reduce variance and overfitting by averaging the predictions of different models.
+- To create a more robust and reliable prediction system.
+
+**II. Ensemble Modeling Techniques:**
+
+The speaker primarily explores **Voting Classifiers**, which combine the predictions of multiple models through voting.
+
+1. **VotingClassifier Types:**
+    - **Hard Voting:** Each model gets one vote for its predicted class, and the final prediction is the class with the most votes (majority vote).
+    - **Soft Voting:** Each model outputs a probability distribution over the classes, and the probabilities are averaged across all models. The final prediction is the class with the highest average probability.
+2. **Ensemble Combinations:**
+    
+    The speaker experimented with different combinations of tuned models in the voting classifier:
+    
+    - Hard voting classifier of three estimators (KNN, SVM, RF).
+    - Soft voting classifier of three estimators (KNN, SVM, RF).
+    - Soft voting on all estimators performing better than 80% except XGB (KNN, RF, LR, SVC).
+    - Soft voting on all estimators including XGB (KNN, SVM, RF, LR, XGB).
+3. **Code:**
+
+```python
+best_lr = best_clf_lr.best_estimator_
+best_knn = best_clf_knn.best_estimator_
+best_svc = best_clf_svc.best_estimator_
+best_rf = best_clf_rf.best_estimator_
+best_xgb = best_clf_xgb.best_estimator_
+
+voting_clf_hard = VotingClassifier(estimators = [('knn',best_knn),('rf',best_rf),('svc',best_svc)], voting = 'hard')
+voting_clf_soft = VotingClassifier(estimators = [('knn',best_knn),('rf',best_rf),('svc',best_svc)], voting = 'soft')
+voting_clf_all = VotingClassifier(estimators = [('knn',best_knn),('rf',best_rf),('svc',best_svc), ('lr', best_lr)], voting = 'soft')
+voting_clf_xgb = VotingClassifier(estimators = [('knn',best_knn),('rf',best_rf),('svc',best_svc), ('xgb', best_xgb),('lr', best_lr)], voting = 'soft')
+
+print('voting_clf_hard :',cross_val_score(voting_clf_hard,X_train,y_train,cv=5))
+print('voting_clf_hard mean :',cross_val_score(voting_clf_hard,X_train,y_train,cv=5).mean())
+
+print('voting_clf_soft :',cross_val_score(voting_clf_soft,X_train,y_train,cv=5))
+print('voting_clf_soft mean :',cross_val_score(voting_clf_soft,X_train,y_train,cv=5).mean())
+
+print('voting_clf_all :',cross_val_score(voting_clf_all,X_train,y_train,cv=5))
+print('voting_clf_all mean :',cross_val_score(voting_clf_all,X_train,y_train,cv=5).mean())
+
+print('voting_clf_xgb :',cross_val_score(voting_clf_xgb,X_train,y_train,cv=5))
+print('voting_clf_xgb mean :',cross_val_score(voting_clf_xgb,X_train,y_train,cv=5).mean())
+
+```
+
+- **Explanation:**
+    - The speaker has a series of code demonstrating how to load and retrain different models.
+    - There is a clear comparison in all the steps of why each one is being completed for effectiveness
+    - The speaker has a clear evaluation of the model
+1. Weightings
+    - The last approach that the video goes through is how to identify proper weighting for each model with `params`
+    - `vote_weight = GridSearchCV(voting_clf_soft, param_grid = params, cv = 5, verbose = True, n_jobs = -1)` is also called here, with proper model identification
+    - Lastly the classifier is properly assessed
+
+**III. Key Takeaways:**
+
+- **Ensemble Modeling Can Improve Performance:** Combining multiple models can often lead to better results than using a single model.
+- **Voting Classifiers are Simple but Effective:** Voting classifiers are a straightforward way to combine the predictions of multiple models.
+- **Soft Voting Can Be More Informative:** Soft voting takes into account the probabilities predicted by each model, which can lead to more accurate predictions.
+- **Weightings are important:** The speaker touches on weightings and how to calculate an output for an even higher performing model
+
+As the last step for the project, the speaker then prepares code for making the submission. At this point all the previous testing has been assessed and applied.
